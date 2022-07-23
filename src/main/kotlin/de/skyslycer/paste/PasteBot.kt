@@ -18,6 +18,10 @@ import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.create.actionRow
 import io.github.cdimascio.dotenv.dotenv
 import io.sentry.Sentry
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import java.net.URI
 import java.net.http.HttpRequest
@@ -31,6 +35,7 @@ private val dotenv = dotenv()
 private val logger = KotlinLogging.logger {}
 
 const val SENTRY_DSN = "SENTRY_DSN"
+const val ENVIRONMENT = "ENVIRONMENT"
 const val BOT_TOKEN = "BOT_TOKEN"
 
 const val POST_URL = "https://pasteapi.skyslycer.de/post"
@@ -43,6 +48,7 @@ suspend fun main() {
     logger.info { "Starting PasteBot..." }
     logger.info { "Initiating Sentry..." }
     Sentry.init {
+        it.environment = getEnv(ENVIRONMENT)
         it.dsn = getEnv(SENTRY_DSN)
         it.tracesSampleRate = 0.5
     }
@@ -91,14 +97,11 @@ class PasteBot {
         }
 
         logger.info { "Discord Bot initiated!" }
+        statusChange(kord)
         kord.login {
             intents {
                 +Intents.nonPrivileged
                 +Intent.MessageContent
-            }
-            presence {
-                this.status = PresenceStatus.DoNotDisturb
-                listening("files and codeblocks!")
             }
         }
     }
@@ -186,6 +189,28 @@ class PasteBot {
             HttpResponse.BodyHandlers.ofString()
         )
         return request.body()
+    }
+
+    private fun statusChange(kord: Kord) {
+        CoroutineScope(Dispatchers.Default).launch {
+            var cycle = false
+
+            while (true) {
+                var guilds = 0
+                kord.guilds.collect { guilds++ }
+
+                kord.editPresence {
+                    status = PresenceStatus.DoNotDisturb
+                    when (cycle) {
+                        false -> listening("$guilds guilds")
+                        true -> listening("files and codeblocks!")
+                    }
+                }
+
+                cycle = !cycle
+                delay(1000L * 60L)
+            }
+        }
     }
 
 }

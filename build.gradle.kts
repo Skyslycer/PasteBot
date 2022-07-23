@@ -20,8 +20,8 @@ dependencies {
     implementation("io.github.microutils", "kotlin-logging", "2.1.23")
     implementation("org.slf4j", "slf4j-api", "2.0.0-alpha7")
     implementation("ch.qos.logback", "logback-classic", "1.3.0-alpha16")
-    implementation("io.sentry", "sentry", "6.0.0")
-    implementation("io.sentry", "sentry-logback", "6.0.0")
+    implementation("io.sentry", "sentry", "6.3.0")
+    implementation("io.sentry", "sentry-logback", "6.3.0")
 
     implementation("io.github.cdimascio:dotenv-kotlin:6.3.1")
 }
