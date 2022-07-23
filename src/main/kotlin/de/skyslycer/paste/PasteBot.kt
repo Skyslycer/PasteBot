@@ -26,7 +26,6 @@ import java.util.*
 import java.util.regex.Pattern
 import kotlin.collections.component1
 import kotlin.collections.component2
-import kotlin.collections.set
 
 private val dotenv = dotenv()
 private val logger = KotlinLogging.logger {}
@@ -72,9 +71,9 @@ class PasteBot {
             }
             if (attachments.isNotEmpty()) {
                 val files =
-                    "**I converted your attachment(s):** \n" + attachments.map { (fileName, url) ->
-                        "`$fileName`: $url"
-                    }.joinToString("\n")
+                    "**I converted your attachment(s):** \n" + attachments.joinToString("\n") {
+                        "`${it.name}`: ${it.url}"
+                    }
                 sendDeletableMessage(message.channel, files, message.author!!)
             }
         }
@@ -122,8 +121,8 @@ class PasteBot {
         return codeblocks
     }
 
-    private fun computeAttachments(message: Message): MutableMap<String, String> {
-        val attachments = mutableMapOf<String, String>()
+    private fun computeAttachments(message: Message): MutableSet<Attachment> {
+        val attachments = mutableSetOf<Attachment>()
         message.attachments.forEach {
             if (it.contentType?.startsWith("text/") == true) {
                 var language = "plain"
@@ -133,7 +132,7 @@ class PasteBot {
                     }
                 }
                 upload(download(it.url), language).ifPresent { url ->
-                    attachments[it.filename] = url
+                    attachments.add(Attachment(it.filename, url))
                 }
             }
         }
@@ -170,6 +169,7 @@ class PasteBot {
             HttpResponse.BodyHandlers.ofString()
         )
         var key: String = request.body()
+        if (key.contains("Request Entity Too Large")) return  Optional.empty()
         key = key.replace("{\"key\":\"", "")
         key = key.replace("\"}", "")
         if (key == "Missing content") return Optional.empty()
@@ -223,4 +223,9 @@ val fileTypes = mapOf(
     ".php" to "php",
     "Dockerfile" to "dockerfile",
     ".md" to "markdown"
+)
+
+data class Attachment(
+    val name: String,
+    val url: String
 )
